@@ -2,5 +2,5 @@ openpyxl
 pandas
 streamlit
 plotly
-sentence_transformers
+sentence-transformers
 operator
