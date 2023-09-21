@@ -4,4 +4,3 @@ streamlit
 plotly
 torch
 sentence-transformers
-operator
