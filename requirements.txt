@@ -2,5 +2,6 @@ openpyxl
 pandas
 streamlit
 plotly
+torch
 sentence-transformers
 operator
