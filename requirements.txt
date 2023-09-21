@@ -3,5 +3,4 @@ pandas
 streamlit
 plotly
 sentence_transformers
-torch==2.0.1
 operator
