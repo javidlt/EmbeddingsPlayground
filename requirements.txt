@@ -1,6 +1,9 @@
 openpyxl
 pandas
+numpy
 streamlit
+matplotlib
 plotly
 torch
 sentence-transformers
+sklearn

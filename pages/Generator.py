@@ -42,7 +42,10 @@ if uploaded_file is not None:
         dfEmbd = pd.read_json(uploaded_file)
 
 
-    columnWiText = st.text_input('Nombre de columna con texto', 'text')
+    # columnWiText = st.text_input('Nombre de columna con texto', 'text')
+    column_names = list(dfEmbd.columns.values)
+    columnWiText = st.selectbox('Nombre de columna con texto', column_names)
+    
     with st.container():
         col1, col2 = st.columns(2)
         with col1:

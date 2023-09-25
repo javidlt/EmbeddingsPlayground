@@ -52,13 +52,14 @@ if uploaded_file is not None:
     #     dfEmbd = pd.read_csv(uploaded_file)
     # elif uploaded_file.name.endswith('.xlsx'):
     dfEmbd = pd.read_json(uploaded_file)
+    column_names = list(dfEmbd.columns.values)
 
     with st.container():
         col1, col2 = st.columns(2)
         with col1:
-            columnWiEmbed = st.text_input('Nombre de columna con embeddings', 'Embedding')
+            columnWiEmbed = st.selectbox('Nombre de columna con embeddings', column_names)
         with col2:
-            columnWiText = st.text_input('Nombre de columna con texto', 'full_text')
+            columnWiText = st.selectbox('Nombre de columna con texto', column_names)
     with st.container():
         col1, col2 = st.columns(2)
         with col1:
