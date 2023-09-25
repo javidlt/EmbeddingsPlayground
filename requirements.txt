@@ -6,4 +6,4 @@ matplotlib
 plotly
 torch
 sentence-transformers
-sklearn
+scikit-learn
