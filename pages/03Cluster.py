@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit import session_state as ss
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -58,10 +59,23 @@ if uploaded_file is not None:
             columnText = st.selectbox('Nombre de columna con texto', column_names)
 
     colEmbed = dfEmbd[columnWiEmbeddings].tolist()
-    step = st.radio("Paso",["**Metodo del codo**", "**Clusterizar**"],)
+    embeddingWithSelectedDimensions = []
+    step = ""
+    if dfEmbd.dtypes[columnWiEmbeddings] == list:
+        with st.container():
+            col1, col2 = st.columns(2)
+            with col1:
+                step = st.radio("Paso",["**Metodo del codo**", "**Clusterizar**"],)
+            with col2:
+                nDimensions = st.number_input('Número de dimensiones a utilizar para clusterizar', min_value=3, max_value=len(colEmbed[0]))
+
+        for embed in colEmbed:
+            emb = embed[:nDimensions]
+            embeddingWithSelectedDimensions.append(emb)
+
     if (step == "**Metodo del codo**"):
         if st.button("Generar"):
-            resToPlot = elbowMethod(colEmbed)
+            resToPlot = elbowMethod(embeddingWithSelectedDimensions)
             # Visualiza el método del codo
             plt.plot(resToPlot[0], resToPlot[1], marker='o')
             plt.xlabel('Número de Clústeres (k)')
@@ -70,13 +84,15 @@ if uploaded_file is not None:
             st.pyplot(plt)
     else: 
         optimal_k = st.number_input('Número de clusters', min_value=2)
+        
         if st.button('Generar'):
-            clusterlabels = clusterKmeans(optimal_k, colEmbed)
-            # Agrega las etiquetas de clúster al DataFrame original
-            dfEmbd['cluster'] = clusterlabels
             x = [i[0] for i in colEmbed]
             y = [i[1] for i in colEmbed]
             z = [i[2] for i in colEmbed]
+
+            clusterlabels = clusterKmeans(optimal_k, embeddingWithSelectedDimensions)
+            # Agrega las etiquetas de clúster al DataFrame original
+            dfEmbd['cluster'] = clusterlabels
             json = convert_to_json(dfEmbd)
             if (columnText == ''):
                 txtList = ['No se dio la columna de texto' for i in range(len(colEmbed))]
@@ -89,7 +105,7 @@ if uploaded_file is not None:
                 "Z": z,
                 "cluster": dfEmbd["cluster"].tolist(),
                 "text": txtList
-            }
+            }  
 
             dfToPlot = pd.DataFrame.from_dict(dfToPlot)
             # Visualización 3D con Plotly
