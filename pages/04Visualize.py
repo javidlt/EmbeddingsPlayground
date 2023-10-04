@@ -70,7 +70,7 @@ if uploaded_file is not None:
         }
 
         dictDfVis = pd.DataFrame.from_dict(dictDfVis)
-        fig = px.scatter_3d(dictDfVis, x='x', y='y', z='z', color='cluster', hover_data=["text"],
+        fig = px.scatter_3d(dictDfVis, x='x', y='y', z='z', color='cluster', hover_data=["text"], 
                                  labels={'X': 'Dimensión 1', 'Y': 'Dimensión 2', 'Z': 'Dimensión 3'},
                                  title='Visualización 3D de Embeddings con Colores de Clústeres')
         st.plotly_chart(fig, use_container_width=True)

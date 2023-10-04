@@ -7,3 +7,5 @@ plotly
 torch
 sentence-transformers
 scikit-learn
+umap-learn
+gudhi
