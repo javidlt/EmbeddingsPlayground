@@ -2,8 +2,7 @@ import streamlit as st
 from streamlit import session_state as ss
 import pandas as pd
 from sentence_transformers import SentenceTransformer, util
-import torch
-import operator
+import numpy as np
 import plotly.express as px
 
 st.set_page_config(
@@ -13,17 +12,45 @@ st.set_page_config(
 
 st.write("# Visualizar embeddings")
 
-uploaded_file = st.sidebar.file_uploader("Choose a file", type=["json"])
-if uploaded_file is not None:
-    # To read file as bytes:
-    bytes_data = uploaded_file.getvalue()
-    # st.write(bytes_data)
+def verifyEmbeddingsColumn(df, colEmbedName):
+    col = np.array(df[colEmbedName].tolist() )
+    is_list_column = df[colEmbedName].apply(lambda x: isinstance(x, list)).all()
+    print(is_list_column)
+    if is_list_column == True:
+        return (col.shape[1] == np.array([row.shape[0] for row in col])).all()
+    return False
 
-    # Can be used wherever a "file-like" object is accepted:
-    # if uploaded_file.name.endswith('.csv'):
-    #     dfEmbd = pd.read_csv(uploaded_file)
-    # elif uploaded_file.name.endswith('.xlsx'):
-    dfEmbd = pd.read_json(uploaded_file)
+
+if 'listOfFilesNamesCluster' not in st.session_state:
+    st.session_state.listOfFilesNamesCluster = []
+if 'listOfDictsCluster' not in st.session_state:
+    st.session_state.listOfDictsCluster = []
+if 'indexOfDatasetCluster' not in st.session_state:
+    st.session_state.indexOfDatasetCluster = 0
+if 'uploaded_file_countCluster' not in st.session_state:
+    st.session_state.uploaded_file_countCluster = 0
+if 'st.session_state.datasetToUseCluster' not in st.session_state:
+    st.session_state.datasetToUseCluster = ""
+
+uploaded_fileCount = st.session_state.uploaded_file_countCluster
+datasetToUse = st.session_state.datasetToUseCluster
+
+uploaded_file = st.sidebar.file_uploader("Choose a file", type=["json"])
+if uploaded_file is not None and (uploaded_file.name not in st.session_state.listOfFilesNamesCluster):
+    if st.sidebar.button('usar archivo'):
+        uploaded_fileCount = uploaded_fileCount+1
+
+if uploaded_file is not None and (uploaded_fileCount != st.session_state.uploaded_file_countCluster):
+    df = pd.read_json(uploaded_file)
+    dictEmbd = df.to_dict()
+    st.session_state.listOfDictsCluster.append(dictEmbd)
+    st.session_state.listOfFilesNamesCluster.append(uploaded_file.name)
+    st.session_state.uploaded_file_countCluster = st.session_state.uploaded_file_countCluster+1
+
+if st.session_state.listOfDictsCluster != []:
+    st.session_state.datasetToUseCluster = st.sidebar.radio("Dataset a usar", st.session_state.listOfFilesNamesCluster)
+    st.session_state.indexOfDatasetCluster = st.session_state.listOfFilesNamesCluster.index(st.session_state.datasetToUseCluster)
+    dfEmbd = pd.DataFrame.from_dict(st.session_state.listOfDictsCluster[st.session_state.indexOfDatasetCluster])
     column_names = list(dfEmbd.columns.values)
     with st.container():
         col1, col2 = st.columns(2)
@@ -37,11 +64,11 @@ if uploaded_file is not None:
             opt = st.radio("Paso",["**Con clusters**", "**Sin clusters**"],)
         with col2:
             if opt == "**Con clusters**":
-                columnWitCluster = st.text_input('Nombre de columna con cluster', 'cluster')
+                columnWitCluster = st.selectbox('Nombre de columna con cluster', column_names)
 
     # dfEmbd["Embedding3d"] = [x[columnWiEmbed][:3] for index, x in dfEmbd.iterrows()]
 
-    if st.button('Generar Gráfico'):
+    if st.button('Generar Gráfico') and verifyEmbeddingsColumn(dfEmbd, columnWiEmbed):
         x = []
         y = []
         z = []

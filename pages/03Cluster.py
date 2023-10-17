@@ -18,6 +18,14 @@ st.set_page_config(
 def convert_to_json(df):
     return df.to_json(index=False)
 
+def verifyEmbeddingsColumn(df, colEmbedName):
+    col = np.array(df[colEmbedName].tolist() )
+    is_list_column = df[colEmbedName].apply(lambda x: isinstance(x, list)).all()
+    print(is_list_column)
+    if is_list_column == True:
+        return (col.shape[1] == np.array([row.shape[0] for row in col])).all()
+    return False
+
 def elbowMethod(columnWiEmbeddings):
     embeddings = np.array(columnWiEmbeddings)
     # Calcula la inercia para diferentes valores de k (número de clústeres)
@@ -82,7 +90,7 @@ def reduceDim(embeddings, nDims, method):
     elif method == 'TDA':
         return genTDA(embeddings, nDims)
     
-def clusterAndVisualize(columnDimensionReductionModel,colEmbed,nDimensions, optimal_k,dfEmbd, columnText):
+def clusterAndVisualize(columnDimensionReductionModel,colEmbed,nDimensions, optimal_k,dfEmbd, columnText, nameFile):
     embeddingWithSelectedDimensions = reduceDim(colEmbed, nDimensions, columnDimensionReductionModel)
     clusterlabels = clusterKmeans(optimal_k, embeddingWithSelectedDimensions)
     # Agrega las etiquetas de clúster al DataFrame original
@@ -96,14 +104,14 @@ def clusterAndVisualize(columnDimensionReductionModel,colEmbed,nDimensions, opti
         txtList = ['No se dio la columna de texto' for i in range(len(colEmbed))]
     else:
         txtList = dfEmbd[columnText].tolist()
-    dfToPlot = {
+    st.session_state.dfToPlot = {
         "X": embeddingWithSelectedDimensions[:,0],
         "Y": embeddingWithSelectedDimensions[:,1],
         "Z": embeddingWithSelectedDimensions[:,2],
         "cluster": dfEmbd["cluster"].tolist(),
         "text": txtList
     } 
-    dfToPlot = pd.DataFrame.from_dict(dfToPlot)
+    dfToPlot = pd.DataFrame.from_dict(st.session_state.dfToPlot)
     # Visualización 3D con Plotly
     fig = px.scatter_3d(dfToPlot, x='X', y='Y', z='Z', color='cluster', hover_data=["text"],
                          labels={'X': 'Dimensión 1', 'Y': 'Dimensión 2', 'Z': 'Dimensión 3'},
@@ -111,67 +119,90 @@ def clusterAndVisualize(columnDimensionReductionModel,colEmbed,nDimensions, opti
                          color_discrete_sequence=px.colors.sequential.Viridis)
     
     st.plotly_chart(fig, use_container_width=True)
-    
+    print(nameFile)
     st.download_button(
         "Descargar",
         json,
-        "embeddingsClusterizados.json",
+        f"{nameFile}_Clusterizado.json",
         "text/json",
         key='download-json'
     )
 
-
-
 st.write("# Generar clusters")
 
+
+if 'listOfFilesNamesCluster' not in st.session_state:
+    st.session_state.listOfFilesNamesCluster = []
+if 'listOfDictsCluster' not in st.session_state:
+    st.session_state.listOfDictsCluster = []
+if 'indexOfDatasetCluster' not in st.session_state:
+    st.session_state.indexOfDatasetCluster = 0
+if 'uploaded_file_countCluster' not in st.session_state:
+    st.session_state.uploaded_file_countCluster = 0
+if 'st.session_state.datasetToUseCluster' not in st.session_state:
+    st.session_state.datasetToUseCluster = ""
+if 'st.session_state.step' not in st.session_state:
+    st.session_state.step = ""
+
+uploaded_fileCount = st.session_state.uploaded_file_countCluster
+datasetToUse = st.session_state.datasetToUseCluster
+
 uploaded_file = st.sidebar.file_uploader("Choose a file", type=["json"])
-if uploaded_file is not None:
-    # To read file as bytes:
-    bytes_data = uploaded_file.getvalue()
-    
-    dfEmbd = pd.read_json(uploaded_file)
+if uploaded_file is not None and (uploaded_file.name not in st.session_state.listOfFilesNamesCluster):
+    if st.sidebar.button('usar archivo'):
+        uploaded_fileCount = uploaded_fileCount+1
+
+if uploaded_file is not None and (uploaded_fileCount != st.session_state.uploaded_file_countCluster):
+    df = pd.read_json(uploaded_file)
+    dictEmbd = df.to_dict()
+    st.session_state.listOfDictsCluster.append(dictEmbd)
+    st.session_state.listOfFilesNamesCluster.append(uploaded_file.name)
+    st.session_state.uploaded_file_countCluster = st.session_state.uploaded_file_countCluster+1
+
+if st.session_state.listOfDictsCluster != []:
+    st.session_state.datasetToUseCluster = st.sidebar.radio("Dataset a usar", st.session_state.listOfFilesNamesCluster)
+    st.session_state.indexOfDatasetCluster = st.session_state.listOfFilesNamesCluster.index(st.session_state.datasetToUseCluster)
+    dfEmbd = pd.DataFrame.from_dict(st.session_state.listOfDictsCluster[st.session_state.indexOfDatasetCluster])
     column_names = list(dfEmbd.columns.values)
     
     with st.container():
         col1, col2, col3 = st.columns(3)
         with col1:
-            columnWiEmbeddings = st.selectbox('Nombre de columna con embeddings', column_names)
+            st.session_state.columnWiEmbeddings = st.selectbox('Nombre de columna con embeddings', column_names)
         with col2:
-            columnText = st.selectbox('Nombre de columna con texto', column_names)
+            st.session_state.columnText = st.selectbox('Nombre de columna con texto', column_names)
         with col3:
-            columnDimensionReductionModel = st.selectbox('Reducción de dimensiones con', ['UMAP', 'PCA', 'TSNE', 'TDA'])
+            st.session_state.columnDimensionReductionModel = st.selectbox('Reducción de dimensiones con', ['UMAP', 'PCA', 'TSNE', 'TDA'])
 
-    colEmbed = dfEmbd[columnWiEmbeddings].tolist()
+    colEmbed = dfEmbd[st.session_state.columnWiEmbeddings].tolist()
     embeddingWithSelectedDimensions = []
     step = ""
-    if dfEmbd.dtypes[columnWiEmbeddings] == list:
+    # if dfEmbd.dtypes[columnWiEmbeddings] == list:
+    if verifyEmbeddingsColumn(dfEmbd, st.session_state.columnWiEmbeddings):
         with st.container():
             col1, col2 = st.columns(2)
             with col1:
-                step = st.radio("Paso",["**Metodo del codo**", "**Clusterizar**"],)
+                st.session_state.step = st.radio("Paso",["**Metodo del codo**", "**Clusterizar**"],)
             with col2:
-                nDimensions = st.number_input('Número de dimensiones a utilizar para clusterizar', min_value=3, max_value=len(colEmbed[0]))
+                st.session_state.nDimensions = st.number_input('Número de dimensiones a utilizar para clusterizar', min_value=3, max_value=len(colEmbed[0]))
 
-        # for embed in colEmbed:
-        #     emb = embed[:nDimensions]
-        #     embeddingWithSelectedDimensions.append(emb)
 
-    if (step == "**Metodo del codo**"):
+    if (st.session_state.step == "**Metodo del codo**"):
         if st.button("Generar"):
-            my_bar = st.progress(0, text=f"Reduciendo dimensiones con {columnDimensionReductionModel}")
-            embeddingWithSelectedDimensions = reduceDim(colEmbed, nDimensions, columnDimensionReductionModel)
+            my_bar = st.progress(0, text=f"Reduciendo dimensiones con {st.session_state.columnDimensionReductionModel}")
+            st.session_state.embeddingWithSelectedDimensions = reduceDim(colEmbed, st.session_state.nDimensions, st.session_state.columnDimensionReductionModel)
             my_bar.progress(1, text="Se ha reducido")
-            resToPlot = elbowMethod(embeddingWithSelectedDimensions)
+            st.session_state.resToPlot = elbowMethod(st.session_state.embeddingWithSelectedDimensions)
             # Visualiza el método del codo
-            plt.plot(resToPlot[0], resToPlot[1], marker='o')
+            plt.plot(st.session_state.resToPlot[0], st.session_state.resToPlot[1], marker='o')
             plt.xlabel('Número de Clústeres (k)')
             plt.ylabel('Inercia')
             plt.title('Método del Codo para Determinar k')
             st.pyplot(plt)
     else: 
-        optimal_k = st.number_input('Número de clusters', min_value=2)
+        st.session_state.optimal_k = st.number_input('Número de clusters', min_value=2)
         if st.button('Generar'):
-            clusterAndVisualize(columnDimensionReductionModel,colEmbed,nDimensions, optimal_k,dfEmbd, columnText)
+            clusterAndVisualize(st.session_state.columnDimensionReductionModel,colEmbed,st.session_state.nDimensions, st.session_state.optimal_k,dfEmbd, st.session_state.columnText, st.session_state.listOfFilesNamesCluster[st.session_state.indexOfDatasetCluster])
 
 else: 
     st.markdown(

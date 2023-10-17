@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit import session_state as ss
 import pandas as pd
 from sentence_transformers import SentenceTransformer, util
 import torch
@@ -28,46 +29,80 @@ def generate(mod, df, colText):
     return dfW
 
 def convert_to_json(df):
-    return df.to_json(index=False)
+    jsonToRet = pd.DataFrame.from_dict(df)
+    return jsonToRet.to_json(index=False)
 
+if 'listOfFilesNamesGenerate' not in st.session_state:
+    st.session_state.listOfFilesNamesGenerate = []
+if 'listOfDictsGenerateEmbd' not in st.session_state:
+    st.session_state.listOfDictsGenerateEmbd = []
+if 'indexOfDataset' not in st.session_state:
+    st.session_state.indexOfDataset = 0
+if 'uploaded_file_count' not in st.session_state:
+    st.session_state.uploaded_file_count = 0
+if 'dfWithGeneratedEmbeddings' not in st.session_state:
+    st.session_state.dfWithGeneratedEmbeddings = {}
+if 'datasetToUseGen' not in st.session_state:
+    st.session_state.datasetToUseGen = ""
+
+uploaded_fileCount = st.session_state.uploaded_file_count
+datasetToUse = st.session_state.datasetToUseGen
 
 uploaded_file = st.sidebar.file_uploader("Choose a file", type=["csv", "excel", "json"])
-if uploaded_file is not None:
+if uploaded_file is not None and (uploaded_file.name not in st.session_state.listOfFilesNamesGenerate):
+    if st.sidebar.button('usar archivo'):
+        uploaded_fileCount = uploaded_fileCount+1
+
+if uploaded_file is not None and (uploaded_fileCount != st.session_state.uploaded_file_count):
     # Can be used wherever a "file-like" object is accepted:
     if uploaded_file.name.endswith('.csv'):
-        dfEmbd = pd.read_csv(uploaded_file)
+        df = pd.read_csv(uploaded_file)
     elif uploaded_file.name.endswith('.xlsx'):
-        dfEmbd = pd.read_excel(uploaded_file)
+        df = pd.read_excel(uploaded_file)
     elif uploaded_file.name.endswith('.json'):
-        dfEmbd = pd.read_json(uploaded_file)
+        df = pd.read_json(uploaded_file)
+    dictEmbd = df.to_dict()
+    st.session_state.listOfDictsGenerateEmbd.append(dictEmbd)
+    st.session_state.listOfFilesNamesGenerate.append(uploaded_file.name)
+    st.session_state.uploaded_file_count = st.session_state.uploaded_file_count+1
 
-
-    # columnWiText = st.text_input('Nombre de columna con texto', 'text')
+if st.session_state.listOfDictsGenerateEmbd != []:
+    st.session_state.datasetToUseGen = st.sidebar.radio("Dataset a usar", st.session_state.listOfFilesNamesGenerate)
+    st.session_state.indexOfDataset = st.session_state.listOfFilesNamesGenerate.index(st.session_state.datasetToUseGen)
+    dfEmbd = pd.DataFrame.from_dict(st.session_state.listOfDictsGenerateEmbd[st.session_state.indexOfDataset])
     column_names = list(dfEmbd.columns.values)
-    columnWiText = st.selectbox('Nombre de columna con texto', column_names)
+    st.session_state.columnGenWiText = st.selectbox('Nombre de columna con texto', column_names)
     
     with st.container():
         col1, col2 = st.columns(2)
         with col1:
-           type = st.radio("Modelo para embeddings",["**default**", "**Cualquier modelo huggingFace**"],)
+           st.session_state.typeGen = st.radio("Modelo para embeddings",["**default**", "**Cualquier modelo huggingFace**"],)
         with col2:
-            if type == "**default**":
-                model = st.selectbox(
+            if st.session_state.typeGen == "**default**":
+                st.session_state.modelGen = st.selectbox(
                     'Modelo',
                     ('ggrn/e5-small-v2', 'intfloat/multilingual-e5-small', 'intfloat/e5-small-v2', 'sentence-transformers/all-MiniLM-L6-v2'))
             else: 
-                model = st.text_input('Modelo')
+                st.session_state.modelGen = st.text_input('Modelo')
+
+    dfFinal = pd.DataFrame()
     if st.button('Generar embeddings', type="primary"):
-        dfFinal = generate(model, dfEmbd,columnWiText)
-        json = convert_to_json(dfFinal)
+        dfFinal = generate(st.session_state.modelGen, dfEmbd,st.session_state.columnGenWiText)
+        st.session_state.dfWithGeneratedEmbeddings = dfFinal.to_dict()
+
+    if st.session_state.dfWithGeneratedEmbeddings != {}:
+        json = convert_to_json(st.session_state.dfWithGeneratedEmbeddings)
         st.download_button(
             "Descargar",
             json,
-            "embeddingsTexto.json",
+            f"{st.session_state.listOfFilesNamesGenerate[st.session_state.indexOfDataset]}_Embeddings.json",
             "text/json",
             key='download-json'
         )
-        st.write(dfFinal)
+        dfToPrint = pd.DataFrame.from_dict(st.session_state.dfWithGeneratedEmbeddings)
+        if datasetToUse != st.session_state.datasetToUseGen:
+            st.markdown("**Se ha cambiado el dataset con el que estas trabajando, descarga el resultado o se borrará tu avance cuando des click a generar.**")
+        st.write(dfToPrint)
 else:
     st.markdown(
     """
