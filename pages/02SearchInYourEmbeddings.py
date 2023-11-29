@@ -84,9 +84,7 @@ if uploaded_file is not None and (uploaded_fileCount != st.session_state.uploade
 
 if st.session_state.listOfDictsSearch != []:
     st.session_state.datasetToUseSearch = st.sidebar.radio("Dataset a usar", st.session_state.listOfFilesNamesSearch)
-    print(st.session_state.datasetToUseSearch)
     st.session_state.indexOfDatasetSearch = st.session_state.listOfFilesNamesSearch.index(st.session_state.datasetToUseSearch)
-    print(st.session_state.indexOfDatasetSearch)
     dfEmbd = pd.DataFrame.from_dict(st.session_state.listOfDictsSearch[st.session_state.indexOfDatasetSearch])
     column_names = list(dfEmbd.columns.values)
 

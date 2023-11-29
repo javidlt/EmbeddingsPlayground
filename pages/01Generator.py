@@ -32,6 +32,10 @@ def convert_to_json(df):
     jsonToRet = pd.DataFrame.from_dict(df)
     return jsonToRet.to_json(index=False)
 
+def convert_to_csv(df):
+    csvToRet = pd.DataFrame.from_dict(df)
+    return csvToRet.to_csv(index=False)
+
 if 'listOfFilesNamesGenerate' not in st.session_state:
     st.session_state.listOfFilesNamesGenerate = []
 if 'listOfDictsGenerateEmbd' not in st.session_state:
@@ -92,13 +96,25 @@ if st.session_state.listOfDictsGenerateEmbd != []:
 
     if st.session_state.dfWithGeneratedEmbeddings != {}:
         json = convert_to_json(st.session_state.dfWithGeneratedEmbeddings)
-        st.download_button(
-            "Descargar",
-            json,
-            f"{st.session_state.listOfFilesNamesGenerate[st.session_state.indexOfDataset]}_Embeddings.json",
-            "text/json",
-            key='download-json'
-        )
+        csv = convert_to_csv(st.session_state.dfWithGeneratedEmbeddings)
+        with st.container ():
+            col1, col2 = st.beta_columns(2)
+            with col1:
+                st.download_button(
+                    "Descargar json",
+                    json,
+                    f"{st.session_state.listOfFilesNamesGenerate[st.session_state.indexOfDataset]}_Embeddings",
+                    "text/json",
+                    key='download-json'
+                )
+            with col2:
+                st.download_button(
+                    "Descargar csv",
+                    csv,
+                    f"{st.session_state.listOfFilesNamesGenerate[st.session_state.indexOfDataset]}_Embeddings",
+                    "text/csv",
+                    key='download-csv'
+                )
         dfToPrint = pd.DataFrame.from_dict(st.session_state.dfWithGeneratedEmbeddings)
         if datasetToUse != st.session_state.datasetToUseGen:
             st.markdown("**Se ha cambiado el dataset con el que estas trabajando, descarga el resultado o se borrará tu avance cuando des click a generar.**")

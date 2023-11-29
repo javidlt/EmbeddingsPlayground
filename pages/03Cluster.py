@@ -18,6 +18,10 @@ st.set_page_config(
 def convert_to_json(df):
     return df.to_json(index=False)
 
+def convert_to_csv(df):
+    csvToRet = pd.DataFrame.from_dict(df)
+    return csvToRet.to_csv(index=False)
+
 def verifyEmbeddingsColumn(df, colEmbedName):
     col = np.array(df[colEmbedName].tolist() )
     is_list_column = df[colEmbedName].apply(lambda x: isinstance(x, list)).all()
@@ -100,6 +104,7 @@ def clusterAndVisualize(columnDimensionReductionModel,colEmbed,nDimensions, opti
     dfEmbd['reducedEmbeddings'] = list(embeddingWithSelectedDimensions)
     dfEmbd['cluster'] = clusterlabels
     json = convert_to_json(dfEmbd)
+    csv = convert_to_csv(dfEmbd)
     if (columnText == ''):
         txtList = ['No se dio la columna de texto' for i in range(len(colEmbed))]
     else:
@@ -120,13 +125,25 @@ def clusterAndVisualize(columnDimensionReductionModel,colEmbed,nDimensions, opti
     
     st.plotly_chart(fig, use_container_width=True)
     print(nameFile)
-    st.download_button(
-        "Descargar",
-        json,
-        f"{nameFile}_Clusterizado.json",
-        "text/json",
-        key='download-json'
-    )
+
+    with st.container ():
+        col1, col2 = st.beta_columns(2)
+        with col1:
+            st.download_button(
+                "Descargar json",
+                json,
+                f"{nameFile}_Clusterizado",
+                "text/json",
+                key='download-json'
+            )
+        with col2:
+            st.download_button(
+                "Descargar csv",
+                csv,
+                f"{nameFile}_Clusterizado",
+                "text/csv",
+                key='download-csv'
+            )
 
 st.write("# Generar clusters")
 
