@@ -26,10 +26,11 @@ def generate(mod, df, colText):
         embedding = embedder.encode(str(row[colText])).tolist()
         dfW.at[index, 'Embedding'] = embedding
         my_bar.progress(pro, text=progress_text)
+    return dfW
 
 def generateCohere(mod, df, colText, apiKey):
     co = cohere.Client(apiKey)
-    doc_emb = co.embed(docs, input_type="search_document", model="embed-english-v3.0").embeddings
+    doc_emb = co.embed(df[colText].astype(str).tolist(), input_type="search_document", model=mod).embeddings
     doc_emb = np.asarray(doc_emb)
     return doc_emb
 
@@ -102,8 +103,10 @@ if st.session_state.listOfDictsGenerateEmbd != []:
         if 'Cohere' in st.session_state.modelGen:
             dfFinal = generateCohere(st.session_state.modelGen, dfEmbd,st.session_state.columnGenWiText, st.session_state.CohereAPIGenerate)
         else:
+            print("si entra")
             dfFinal = generate(st.session_state.modelGen, dfEmbd,st.session_state.columnGenWiText)
-        st.session_state.dfWithGeneratedEmbeddings = dfFinal.to_dict()
+            print(dfFinal)
+            st.session_state.dfWithGeneratedEmbeddings = dfFinal.to_dict()
 
     if st.session_state.dfWithGeneratedEmbeddings != {}:
         json = convert_to_json(st.session_state.dfWithGeneratedEmbeddings)
