@@ -4,6 +4,8 @@ import pandas as pd
 from sentence_transformers import SentenceTransformer, util
 import torch
 import operator
+import cohere
+import numpy as np
 
 st.set_page_config(
     page_title="Generador",
@@ -25,8 +27,11 @@ def generate(mod, df, colText):
         dfW.at[index, 'Embedding'] = embedding
         my_bar.progress(pro, text=progress_text)
 
-
-    return dfW
+def generateCohere(mod, df, colText, apiKey):
+    co = cohere.Client(apiKey)
+    doc_emb = co.embed(docs, input_type="search_document", model="embed-english-v3.0").embeddings
+    doc_emb = np.asarray(doc_emb)
+    return doc_emb
 
 def convert_to_json(df):
     jsonToRet = pd.DataFrame.from_dict(df)
@@ -88,17 +93,23 @@ if st.session_state.listOfDictsGenerateEmbd != []:
                     ('ggrn/e5-small-v2', 'Cohere/Cohere-embed-english-v3.0', 'Cohere/Cohere-embed-multilingual-v3.0', 'intfloat/multilingual-e5-small', 'intfloat/e5-small-v2', 'sentence-transformers/all-MiniLM-L6-v2'))
             else: 
                 st.session_state.modelGen = st.text_input('Modelo')
+    
+    if 'Cohere' in st.session_state.modelGen:
+        st.session_state.CohereAPIGenerate = st.text_input('API KEY')
 
     dfFinal = pd.DataFrame()
     if st.button('Generar embeddings', type="primary"):
-        dfFinal = generate(st.session_state.modelGen, dfEmbd,st.session_state.columnGenWiText)
+        if 'Cohere' in st.session_state.modelGen:
+            dfFinal = generateCohere(st.session_state.modelGen, dfEmbd,st.session_state.columnGenWiText, st.session_state.CohereAPIGenerate)
+        else:
+            dfFinal = generate(st.session_state.modelGen, dfEmbd,st.session_state.columnGenWiText)
         st.session_state.dfWithGeneratedEmbeddings = dfFinal.to_dict()
 
     if st.session_state.dfWithGeneratedEmbeddings != {}:
         json = convert_to_json(st.session_state.dfWithGeneratedEmbeddings)
         csv = convert_to_csv(st.session_state.dfWithGeneratedEmbeddings)
         with st.container ():
-            col1, col2 = st.beta_columns(2)
+            col1, col2 = st.columns(2)
             with col1:
                 st.download_button(
                     "Descargar json",
