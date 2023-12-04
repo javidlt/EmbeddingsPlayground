@@ -102,7 +102,7 @@ if st.session_state.listOfDictsSearch != []:
             if st.session_state.genre == "**default**":
                 st.session_state.option = st.selectbox(
                     'Modelo',
-                    ('ggrn/e5-small-v2', 'intfloat/multilingual-e5-small', 'intfloat/e5-small-v2', 'sentence-transformers/all-MiniLM-L6-v2'))
+                    ('ggrn/e5-small-v2', 'Cohere/Cohere-embed-english-v3.0', 'Cohere/Cohere-embed-multilingual-v3.0', 'intfloat/multilingual-e5-small', 'intfloat/e5-small-v2', 'sentence-transformers/all-MiniLM-L6-v2'))
             else: 
                 st.session_state.option = st.text_input('Modelo')
     
