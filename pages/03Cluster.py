@@ -132,7 +132,7 @@ def clusterAndVisualize(columnDimensionReductionModel,colEmbed,nDimensions, opti
             st.download_button(
                 "Descargar json",
                 json,
-                f"{nameFile}_Clusterizado",
+                f"{nameFile}_Clusterizado.json",
                 "text/json",
                 key='download-json'
             )
@@ -140,7 +140,7 @@ def clusterAndVisualize(columnDimensionReductionModel,colEmbed,nDimensions, opti
             st.download_button(
                 "Descargar csv",
                 csv,
-                f"{nameFile}_Clusterizado",
+                f"{nameFile}_Clusterizado.csv",
                 "text/csv",
                 key='download-csv'
             )

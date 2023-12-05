@@ -117,7 +117,7 @@ if st.session_state.listOfDictsGenerateEmbd != []:
                 st.download_button(
                     "Descargar json",
                     json,
-                    f"{st.session_state.listOfFilesNamesGenerate[st.session_state.indexOfDataset]}_Embeddings",
+                    f"{st.session_state.listOfFilesNamesGenerate[st.session_state.indexOfDataset]}_Embeddings.json",
                     "text/json",
                     key='download-json'
                 )
@@ -125,7 +125,7 @@ if st.session_state.listOfDictsGenerateEmbd != []:
                 st.download_button(
                     "Descargar csv",
                     csv,
-                    f"{st.session_state.listOfFilesNamesGenerate[st.session_state.indexOfDataset]}_Embeddings",
+                    f"{st.session_state.listOfFilesNamesGenerate[st.session_state.indexOfDataset]}_Embeddings.csv",
                     "text/csv",
                     key='download-csv'
                 )
