@@ -201,7 +201,7 @@ if st.session_state.listOfDictsCluster != []:
             with col1:
                 st.session_state.step = st.radio("Paso",["**Metodo del codo**", "**Clusterizar**"],)
             with col2:
-                st.session_state.nDimensions = st.number_input('Número de dimensiones a utilizar para clusterizar', min_value=3, max_value=len(colEmbed[0]))
+                st.session_state.nDimensions = st.number_input('Número de dimensiones a utilizar para clusterizar', min_value=1, max_value=len(colEmbed[0]))
 
 
     if (st.session_state.step == "**Metodo del codo**"):
